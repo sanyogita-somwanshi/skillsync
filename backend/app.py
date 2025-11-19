@@ -48,6 +48,37 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     message = db.Column(db.Text, nullable=False)
 
+# --- DATA SEEDING (This fills your database automatically!) ---
+def seed_database():
+    # Check if database already has skills. If yes, stop (to avoid duplicates).
+    if Skill.query.first():
+        return 
+
+    print("Seeding database with initial skills...")
+    
+    # Technical Skills
+    tech_skills = [
+        "Python", "JavaScript", "HTML/CSS", "SQL", "React", 
+        "Node.js", "Data Analysis", "Machine Learning", "Git", "Java"
+    ]
+    for name in tech_skills:
+        # Only add if it doesn't exist
+        if not Skill.query.filter_by(name=name).first():
+            db.session.add(Skill(name=name, category='Technical', industry_need_level=5))
+
+    # Soft Skills (Must match your ACTIVITIES keys exactly)
+    soft_skills = [
+        'Communication Skills', 'Time Management', 'Public Speaking',
+        'Teamwork Skills', 'Critical Thinking', 'Leadership Skills',
+        'Creativity', 'Problem Solving', 'Emotional Intelligence'
+    ]
+    for name in soft_skills:
+        if not Skill.query.filter_by(name=name).first():
+            db.session.add(Skill(name=name, category='Soft', industry_need_level=5))
+
+    db.session.commit()
+    print("Database seeded successfully!")
+
 # --- DATA ---
 ROADMAP_GROUPS = [
     "Web Developer", "Data Scientist", "Cybersecurity Analyst", 
@@ -59,7 +90,6 @@ ROADMAP_GROUPS = [
 @app.route('/')
 def home():
     # Show latest 3 reviews on homepage
-    # We use a try-except block here just in case the table isn't ready yet, to prevent crashes
     try:
         feedbacks = Feedback.query.order_by(Feedback.id.desc()).limit(3).all()
     except:
@@ -200,7 +230,11 @@ def save_soft_skills():
 
 @app.route('/feedback.html')
 def feedback():
-    feedbacks = Feedback.query.order_by(Feedback.id.desc()).all()
+    # Show all feedbacks on the dedicated feedback page
+    try:
+        feedbacks = Feedback.query.order_by(Feedback.id.desc()).all()
+    except:
+        feedbacks = []
     return render_template('feedback.html', feedbacks=feedbacks)
 
 @app.route('/submit_feedback', methods=['GET', 'POST'])
@@ -220,10 +254,11 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- THIS IS THE IMPORTANT FIX ---
-# We create the tables OUTSIDE the main block so Gunicorn sees it.
+# --- MAIN EXECUTION BLOCK ---
+# We run this outside __main__ so Gunicorn sees it
 with app.app_context():
-    db.create_all()
+    db.create_all()     # 1. Create tables
+    seed_database()     # 2. Fill tables with default skills
 
 if __name__ == '__main__':
     app.run(debug=True)
