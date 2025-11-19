@@ -59,7 +59,11 @@ ROADMAP_GROUPS = [
 @app.route('/')
 def home():
     # Show latest 3 reviews on homepage
-    feedbacks = Feedback.query.order_by(Feedback.id.desc()).limit(3).all()
+    # We use a try-except block here just in case the table isn't ready yet, to prevent crashes
+    try:
+        feedbacks = Feedback.query.order_by(Feedback.id.desc()).limit(3).all()
+    except:
+        feedbacks = []
     return render_template('index.html', feedbacks=feedbacks)
 
 @app.route('/register.html')
@@ -143,7 +147,6 @@ def save_skills():
 @app.route('/mark_activity_complete', methods=['POST'])
 @login_required
 def mark_activity_complete():
-    # UPDATED: Removed category='Soft' filter to allow technical skills to be marked complete
     data = request.json
     skill_name = data.get('skill_name')
     
@@ -156,7 +159,6 @@ def mark_activity_complete():
         db.session.add(entry)
     else:
         entry.completed_activities_count += 1
-        # Optional logic: Auto-level up after 3 activities
         if entry.current_level < 5 and entry.completed_activities_count % 3 == 0:
              entry.current_level += 1
 
@@ -198,7 +200,6 @@ def save_soft_skills():
 
 @app.route('/feedback.html')
 def feedback():
-    # Show all feedbacks on the dedicated feedback page
     feedbacks = Feedback.query.order_by(Feedback.id.desc()).all()
     return render_template('feedback.html', feedbacks=feedbacks)
 
@@ -219,7 +220,10 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
+# --- THIS IS THE IMPORTANT FIX ---
+# We create the tables OUTSIDE the main block so Gunicorn sees it.
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
