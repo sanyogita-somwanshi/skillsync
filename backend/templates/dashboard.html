@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SkillSync - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .color-primary { background-color: #0d9488; } 
+        .color-accent { background-color: #38bdf8; } 
+        .rounded-xl-lg { border-radius: 1.5rem; }
+        .transition-ease { transition: all 0.3s ease-in-out; }
+        /* Chatbot */
+        .chatbot-button { position: fixed; bottom: 30px; right: 30px; z-index: 1000; cursor: pointer; }
+        .chatbot-window { position: fixed; bottom: 30px; right: 30px; width: 350px; height: 500px; z-index: 1001; display: none; }
+        .user-message { background-color: #38bdf8; color: white; padding: 8px; border-radius: 10px; margin-bottom: 5px; text-align: right; }
+        .ai-message { background-color: #f0fdfa; border: 1px solid #0d9488; padding: 8px; border-radius: 10px; margin-bottom: 5px; }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-50 min-h-screen flex flex-col">
+    <header class="sticky top-0 z-50 bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+            <a href="{{ url_for('home') }}" class="text-3xl font-bold text-teal-600 tracking-wider">SkillSync</a>
+            <div>
+                <a href="{{ url_for('home') }}" class="text-gray-600 hover:text-teal-600 font-medium transition-ease mr-6">Home</a>
+                <a href="{{ url_for('logout') }}" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-ease">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow py-16 md:py-24">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">Welcome to Your SkillSync Dashboard</h1>
+            <p class="text-xl text-gray-600 mb-6 text-center max-w-3xl mx-auto">Welcome, **{{ username }}**! Here is your current employability profile.</p>
+            
+            <div class="bg-white p-6 md:p-8 rounded-xl-lg shadow-2xl mb-12 border-t-4 border-sky-500">
+                <h2 class="text-2xl font-bold mb-4 text-gray-900">🚀 Overall Status</h2>
+                <p class="text-lg text-gray-700 font-semibold mb-2">{{ gaps['status_message'] }}</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-8 bg-white rounded-xl-lg shadow-2xl border border-teal-100 flex flex-col justify-between hover:shadow-teal-300/50 transition-ease">
+                    <div>
+                        <div class="text-4xl text-teal-600 mb-4">⚙️ Technical Skills</div>
+                        <h2 class="text-2xl font-bold mb-3 text-gray-900">Level {{ gaps['Technical']['level'] }}/5</h2>
+                        <div class="h-5 bg-gray-200 rounded-full overflow-hidden mb-3"><div class="bg-teal-500 h-full" style="width: {{ gaps['Technical']['level'] * 20 }}%;"></div></div>
+                        <p class="text-sm text-gray-600 mb-6">Gap: {{ gaps['Technical']['total_gap'] }} levels to close.</p>
+                    </div>
+                    <a href="{{ url_for('technical_roadmap') }}" class="color-primary text-white font-bold text-lg py-3 w-full rounded-xl-lg shadow-xl hover:opacity-90 text-center">Update Roadmap</a>
+                </div>
+
+                <div class="p-8 bg-white rounded-xl-lg shadow-2xl border border-sky-100 flex flex-col justify-between hover:shadow-sky-300/50 transition-ease">
+                    <div>
+                        <div class="text-4xl text-teal-600 mb-4">💬 Soft Skills</div>
+                        <h2 class="text-2xl font-bold mb-3 text-gray-900">Level {{ gaps['Soft']['level'] }}/5</h2>
+                        <div class="h-5 bg-gray-200 rounded-full overflow-hidden mb-3"><div class="bg-sky-500 h-full" style="width: {{ gaps['Soft']['level'] * 20 }}%;"></div></div>
+                        <p class="text-sm text-gray-600 mb-6">Gap: {{ gaps['Soft']['total_gap'] }} levels to close.</p>
+                    </div>
+                    <a href="{{ url_for('non_tech') }}" class="color-accent text-white font-bold text-lg py-3 w-full rounded-xl-lg shadow-xl hover:opacity-90 text-center">Soft Skill Activities</a>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="chatbot-button" class="chatbot-button" onclick="toggleChatbot()">
+        <div class="color-primary rounded-full p-4 text-white shadow-xl text-3xl">💬</div>
+    </div>
+    <div id="chatbot-window" class="chatbot-window bg-white rounded-xl-lg border-2 border-teal-500 flex flex-col">
+        <div class="p-4 color-primary text-white font-bold flex justify-between"><span>AI Guide</span><span onclick="toggleChatbot()" class="cursor-pointer">✕</span></div>
+        <div id="chat-messages" class="flex-grow p-4 overflow-y-auto"></div>
+        <div class="p-2 border-t flex"><input id="chat-input" class="flex-grow border p-2" placeholder="Ask me..."><button onclick="sendMessage()" class="bg-teal-600 text-white px-4">Send</button></div>
+    </div>
+
+    <script>
+        const API_KEY = "AIzaSyDJ_Zv3pC_c0CRlm_ULZk1h7BgN6ZW4wN4"; 
+        function toggleChatbot() { const w = document.getElementById('chatbot-window'); w.style.display = w.style.display === 'none' ? 'flex' : 'none'; }
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value;
+            if(!text) return;
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += `<div class="user-message">${text}</div>`;
+            input.value = '';
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ contents: [{ parts: [{ text }] }] })
+            });
+            const data = await res.json();
+            const reply = data.candidates[0].content.parts[0].text;
+            box.innerHTML += `<div class="ai-message">${reply}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+        document.getElementById('chat-input').addEventListener('keypress', function(e) { if (e.key === 'Enter') sendMessage(); });
+        document.addEventListener('DOMContentLoaded', () => { document.getElementById('chatbot-window').style.display = 'none'; });
+    </script>
+</body>
+</html>

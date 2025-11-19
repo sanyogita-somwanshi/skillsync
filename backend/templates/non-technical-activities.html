@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSync - Non-Technical Activities</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom colors based on the aesthetic goal */
+        .color-primary { background-color: #0d9488; }
+        .color-accent { background-color: #38bdf8; }
+        .rounded-xl-lg { border-radius: 1.5rem; }
+        .transition-ease { transition: all 0.3s ease-in-out; }
+        .progress-bg { background-color: #e0f2f1; }
+        /* Chatbot CSS included from technical-roadmap */
+        .chatbot-button { position: fixed; bottom: 30px; right: 30px; z-index: 1000; cursor: pointer; }
+        .chatbot-icon { box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.5), 0 4px 6px -2px rgba(13, 148, 136, 0.1); }
+        .chatbot-window { position: fixed; bottom: 30px; right: 30px; width: min(90vw, 400px); height: min(70vh, 600px); z-index: 1001; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .user-message { background-color: #38bdf8; color: white; border-radius: 1rem 1rem 0.2rem 1rem; }
+        .ai-message { background-color: #f0fdfa; border: 1px solid #0d9488; border-radius: 1rem 1rem 1rem 0.2rem; }
+        .completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+            color: #10b981; /* Green text for completed */
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-800 antialiased min-h-screen flex flex-col bg-gray-50">
+
+    <header class="sticky top-0 z-50 bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+            <a href="{{ url_for('home') }}" class="text-3xl font-bold text-teal-600 tracking-wider">SkillSync</a>
+            <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-teal-600 font-medium transition-ease">← Back to Dashboard</a>
+        </div>
+    </header>
+
+    <main class="flex-grow py-16 md:py-20">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">
+                Non-Technical Skills Guide & Activities
+            </h1>
+            <p class="text-xl text-gray-600 mb-12 text-center max-w-3xl mx-auto">
+                Select a soft skill to view actionable activities you can complete to close your skill gap.
+            </p>
+            
+            <div class="bg-white p-6 md:p-8 rounded-xl-lg shadow-xl mb-12 max-w-2xl mx-auto border-t-4 border-teal-500">
+                <h2 class="text-2xl font-bold mb-4 text-gray-900">1. Focus on a Soft Skill</h2>
+                
+                <select id="soft-skill-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 transition duration-150 text-lg font-semibold" onchange="loadSoftSkillActivities()">
+                    <option value="" disabled selected>Select a soft skill to begin...</option>
+                    {% for skill in soft_skill_data %}
+                        <option value="{{ skill.name }}" data-current-level="{{ skill.currentLevel }}" data-industry-need="{{ skill.industryNeed }}" data-completed-count="{{ skill.completedCount }}">
+                            {{ ICONS[skill.name] }} {{ skill.name }} (Level: {{ skill.currentLevel }}/5)
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <p id="skill-focus-text" class="text-sm text-gray-500 italic mt-3">
+                    Choose a skill to see practical activities you can start today.
+                </p>
+            </div>
+            <div class="bg-white p-6 md:p-10 rounded-xl-lg shadow-2xl">
+                <div class="flex justify-between items-baseline mb-4">
+                    <h2 id="activity-header" class="text-3xl font-bold text-gray-900">Actionable Activities</h2>
+                    <span id="level-display" class="text-xl font-semibold text-teal-600"></span>
+                </div>
+
+                <p id="activity-guide" class="text-lg text-gray-600 mb-8">Mark an activity complete once you've successfully finished the task. Completion counts toward raising your skill level!</p>
+                
+                <div id="activity-list-container" class="grid md:grid-cols-1 gap-6">
+                    <p class="text-center text-gray-500">Select a skill from the dropdown above to load the activity list.</p>
+                </div>
+
+            </div>
+            
+        </div>
+    </main>
+
+    <footer class="py-8 bg-gray-900 text-white text-center">
+        <div class="max-w-7xl mx-auto px-4">
+            &copy; 2025 SkillSync. All rights reserved.
+        </div>
+    </footer>
+
+    <div id="chatbot-button" class="chatbot-button transition-ease hidden" onclick="toggleChatbot()">
+        <div class="color-primary chatbot-icon rounded-full p-4 text-white hover:shadow-xl hover:scale-105 transition-ease flex items-center justify-center">
+            <span class="text-3xl font-bold">💬</span>
+        </div>
+    </div>
+    
+    <div id="chatbot-window" class="chatbot-window bg-white rounded-xl-lg border-2 border-teal-500 flex flex-col hidden">
+        <div class="p-4 color-primary text-white font-bold flex justify-between items-center rounded-t-xl-lg">
+            <span>AI Career Guide</span>
+            <button onclick="toggleChatbot()" class="text-xl font-light leading-none hover:text-gray-200">✕</button>
+        </div>
+        <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4">
+             <div class="flex justify-start">
+                <div class="ai-message p-3 max-w-xs">
+                    Hello! I'm your AI Career Guide. I can help you understand industry trends and suggest resources for your skill gaps. What would you like to know?
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex">
+            <input type="text" id="chat-input" placeholder="Ask me about careers, soft skills, etc." class="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:border-teal-500">
+            <button onclick="sendMessage()" id="send-button" class="bg-teal-600 text-white px-4 py-2 rounded-r-lg font-semibold hover:bg-teal-700 transition-ease">
+                Send
+            </button>
+        </div>
+    </div>
+    <script>
+        // Data passed from Flask
+        const ALL_ACTIVITIES = {{ ACTIVITIES | tojson | safe }};
+        const ICONS = {{ ICONS | tojson | safe }};
+
+        // --- CORE APPLICATION LOGIC ---
+        
+        function loadSoftSkillActivities() {
+            const select = document.getElementById('soft-skill-select');
+            const skillName = select.value;
+            const selectedOption = select.options[select.selectedIndex];
+            const container = document.getElementById('activity-list-container');
+            const header = document.getElementById('activity-header');
+            const levelDisplay = document.getElementById('level-display');
+
+            if (!skillName) {
+                container.innerHTML = '<p class="text-center text-gray-500">Select a skill from the dropdown above to load the activity list.</p>';
+                header.textContent = 'Actionable Activities';
+                levelDisplay.textContent = '';
+                return;
+            }
+
+            const currentLevel = selectedOption.getAttribute('data-current-level');
+            const industryNeed = selectedOption.getAttribute('data-industry-need');
+            const completedCount = selectedOption.getAttribute('data-completed-count');
+
+            header.innerHTML = `${ICONS[skillName]} ${skillName} Activities`;
+            levelDisplay.innerHTML = `Level: ${currentLevel}/${industryNeed}`;
+            
+            const activityList = ALL_ACTIVITIES[skillName] || [];
+
+            let activitiesHtml = `<ul class="list-none space-y-4">`;
+
+            // Note: Since the backend only tracks the count, we assume activities are completed sequentially or we don't persist which exact activity was completed.
+            // We use the count to visually mark a number of activities as 'completed'.
+            activityList.forEach((activity, index) => {
+                const isCompleted = index < completedCount;
+                const completedClass = isCompleted ? 'completed' : '';
+                const buttonText = isCompleted ? 'Completed' : 'Mark Complete';
+                const buttonClasses = isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100 hover:text-green-700';
+
+                activitiesHtml += `
+                    <li class="p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm flex justify-between items-center ${completedClass}" data-activity-index="${index}">
+                        <span class="text-md text-gray-700">${activity}</span>
+                        <button class="text-xs py-1 px-3 rounded-full transition-ease mark-complete-btn ${buttonClasses}" 
+                                onclick="markComplete(this, '${skillName}')" 
+                                ${isCompleted ? 'disabled' : ''}>
+                            ${buttonText}
+                        </button>
+                    </li>
+                `;
+            });
+
+            activitiesHtml += `</ul>`;
+            container.innerHTML = activitiesHtml;
+        }
+        
+        // Function to handle the "Mark Complete" button click and send data to Flask
+        async function markComplete(button, skillName) {
+            // Disable button immediately to prevent double-click
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/mark_activity_complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ skill_name: skillName })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const listItem = button.closest('li');
+                    
+                    // 1. Update visual status
+                    listItem.classList.add('completed');
+                    button.textContent = 'Completed';
+                    button.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-green-100');
+                    button.classList.add('bg-green-500', 'text-white');
+                    
+                    // 2. Update dropdown option data attributes
+                    const select = document.getElementById('soft-skill-select');
+                    const selectedOption = select.options[select.selectedIndex];
+                    selectedOption.setAttribute('data-completed-count', result.count);
+                    selectedOption.setAttribute('data-current-level', result.new_level);
+
+                    // 3. Update dropdown text display
+                    const industryNeed = selectedOption.getAttribute('data-industry-need');
+                    const icon = ICONS[skillName];
+                    selectedOption.textContent = `${icon} ${skillName} (Level: ${result.new_level}/${industryNeed})`;
+
+                    // 4. Update local level display
+                    const levelDisplay = document.getElementById('level-display');
+                    levelDisplay.innerHTML = `Level: ${result.new_level}/${industryNeed}`;
+                } else {
+                    alert(`Failed to save progress: ${result.message}`);
+                }
+
+            } catch (error) {
+                console.error('Network or server error during activity tracking:', error);
+                alert('Could not connect to the server to save progress.');
+            } finally {
+                 // Re-enable button only if needed (for error state) or keep disabled on success
+                 // Since we mark it complete and disable on success, we don't re-enable here.
+                 if (!button.classList.contains('bg-green-500')) {
+                    button.disabled = false;
+                 }
+            }
+        }
+        
+        // --- CHATBOT LOGIC ---
+
+        const API_KEY = "AIzaSyDJ_Zv3pC_c0CRlm_ULZk1h7BgN6ZW4wN4";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        let chatHistory = [];
+        const SYSTEM_INSTRUCTION = "You are an expert career coach and skill gap analyst named 'AI Career Guide'. You provide concise, actionable, and encouraging advice focused on soft skill development and study habits. Do not use external links. Limit responses to 3 paragraphs max.";
+
+        function toggleChatbot() {
+            const window = document.getElementById('chatbot-window');
+            window.classList.toggle('hidden');
+        }
+
+        function appendMessage(sender, message) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+            messageDiv.innerHTML = `<div class="${sender}-message p-3 max-w-xs text-sm">${message}</div>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showLoading() {
+            const chatMessages = document.getElementById('chat-messages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.innerHTML = `<div class="ai-message p-3 max-w-xs text-sm animate-pulse">Thinking...</div>`;
+            chatMessages.appendChild(loadingDiv);
+            document.getElementById('send-button').disabled = true;
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('loading-indicator');
+            if (loading) loading.remove();
+            document.getElementById('send-button').disabled = false;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+            input.value = '';
+            appendMessage('user', prompt);
+            showLoading();
+
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory, tools: [{ "google_search": {} }], systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] } };
+            const apiUrl = API_URL;
+            const maxRetries = 5;
+            let responseText = "Sorry, I couldn't get a response right now. Please try again.";
+
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) {
+                        const result = await response.json();
+                        const candidate = result.candidates?.[0];
+                        if (candidate && candidate.content?.parts?.[0]?.text) {
+                            responseText = candidate.content.parts[0].text;
+                            break; 
+                        }
+                    }
+                } catch (error) {
+                    if (attempt < maxRetries - 1) {
+                        const delay = Math.pow(2, attempt) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+            
+            hideLoading();
+            appendMessage('ai', responseText);
+            chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+            input.focus();
+        }
+        
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSoftSkillActivities();
+            const chatbotButton = document.getElementById('chatbot-button');
+            if (chatbotButton) {
+                chatbotButton.classList.remove('hidden'); 
+            }
+        });
+    </script>
+</body>

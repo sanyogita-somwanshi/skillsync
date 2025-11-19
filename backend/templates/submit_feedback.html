@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSync - Submit Feedback</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .color-primary { background-color: #0d9488; }
+        .transition-ease { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-50 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="{{ url_for('home') }}" class="text-2xl font-bold text-teal-600">SkillSync</a>
+            <a href="{{ url_for('feedback') }}" class="text-gray-600 hover:text-teal-600 font-medium">← Back to Reviews</a>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center py-12 px-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2 text-center">We Value Your Feedback</h2>
+            <p class="text-gray-600 text-center mb-8">Help us improve the roadmap for future students.</p>
+
+            <form action="{{ url_for('submit_feedback') }}" method="POST" class="space-y-6">
+                
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Your Name</label>
+                    <input type="text" id="name" name="name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+
+                <div>
+                    <label for="rating" class="block text-sm font-medium text-gray-700">Rating</label>
+                    <select id="rating" name="rating" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Very Good</option>
+                        <option value="3">3 - Good</option>
+                        <option value="2">2 - Fair</option>
+                        <option value="1">1 - Poor</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="message" class="block text-sm font-medium text-gray-700">Your Review</label>
+                    <textarea id="message" name="message" rows="4" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500"></textarea>
+                </div>
+
+                <button type="submit" class="color-primary text-white font-bold text-lg py-3 w-full rounded-xl shadow-xl hover:opacity-90 transition-ease">
+                    Submit Feedback
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="py-4 bg-gray-900 text-white text-center text-sm">
+        &copy; 2025 SkillSync.
+    </footer>
+</body>
+</html>

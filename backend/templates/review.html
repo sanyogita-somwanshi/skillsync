@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSync - Login or Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom colors from the homepage aesthetic */
+        .color-primary { background-color: #0d9488; } /* Deep Teal */
+        .color-accent { background-color: #38bdf8; } /* Vibrant Cyan */
+        .rounded-xl-lg { border-radius: 1.5rem; }
+        .transition-ease { transition: all 0.3s ease-in-out; }
+        /* Background to make the card stand out */
+        body { background-color: #f3f4f6; } 
+    </style>
+</head>
+
+<body class="font-sans text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <a href="{{ url_for('home') }}" class="text-2xl font-bold text-teal-600 tracking-wider">SkillSync</a>
+            <a href="{{ url_for('home') }}" class="text-gray-600 hover:text-teal-600 transition-ease text-sm">← Back to Home</a>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center py-12">
+        <div class="w-full max-w-md bg-white p-8 md:p-10 rounded-xl-lg shadow-2xl">
+            
+            <h2 id="form-title" class="text-3xl font-bold text-center mb-6 text-gray-900">Start Your Free Journey</h2>
+            <p id="form-subtitle" class="text-center text-gray-600 mb-8">Sign up to get your personalized career roadmap.</p>
+
+            <div class="flex bg-gray-100 p-1 rounded-xl-lg mb-6">
+                <button id="register-tab" class="w-1/2 py-3 font-semibold rounded-xl-lg color-primary text-white transition-ease shadow-md" onclick="showForm('register')">Register</button>
+                <button id="login-tab" class="w-1/2 py-3 font-semibold rounded-xl-lg text-gray-600 hover:bg-white transition-ease" onclick="showForm('login')">Login</button>
+            </div>
+
+            <form id="register-form" action="{{ url_for('register') }}" method="POST" class="space-y-4">
+                
+                <div>
+                    <label for="reg-username" class="block text-sm font-medium text-gray-700">Username</label>
+                    <input type="text" id="reg-username" name="username" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+
+                <div>
+                    <label for="reg-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="reg-email" name="email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                
+                <div>
+                    <label for="reg-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="reg-password" name="password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                
+                <div class="flex items-center">
+                    <input id="terms" name="terms" type="checkbox" required class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded">
+                    <label for="terms" class="ml-2 block text-sm text-gray-600">
+                        I agree to the <a href="#" class="text-teal-600 hover:text-teal-700 font-medium">Terms and Conditions</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="color-primary text-white font-bold text-lg py-3 w-full rounded-xl-lg shadow-xl hover:opacity-90 transition-ease mt-6">
+                    Sign Up and Start Assessment
+                </button>
+            </form>
+
+            <form id="login-form" action="{{ url_for('login') }}" method="POST" class="space-y-4 hidden">
+                
+                <div>
+                    <label for="log-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="log-email" name="email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                
+                <div>
+                    <label for="log-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="log-password" name="password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                
+                <div class="text-right">
+                    <a href="#" class="text-sm text-teal-600 hover:text-teal-700 font-medium">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="color-primary text-white font-bold text-lg py-3 w-full rounded-xl-lg shadow-xl hover:opacity-90 transition-ease mt-6">
+                    Login to Dashboard
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-gray-500 text-sm">Or sign up with:</p>
+                <button class="w-full py-3 mt-3 border border-gray-300 rounded-xl-lg text-gray-700 font-semibold hover:bg-gray-50 transition-ease">
+                     Sign Up with Google
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="py-4 bg-gray-900 text-white text-center text-sm">
+        &copy; 2025 SkillSync.
+    </footer>
+
+    <script>
+        function showForm(formType) {
+            const registerForm = document.getElementById('register-form');
+            const loginForm = document.getElementById('login-form');
+            const registerTab = document.getElementById('register-tab');
+            const loginTab = document.getElementById('login-tab');
+            const title = document.getElementById('form-title');
+            const subtitle = document.getElementById('form-subtitle');
+
+            if (formType === 'register') {
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                registerTab.classList.add('color-primary', 'text-white', 'shadow-md');
+                registerTab.classList.remove('bg-white', 'text-gray-600', 'hover:bg-white');
+                loginTab.classList.remove('color-primary', 'text-white', 'shadow-md');
+                loginTab.classList.add('text-gray-600', 'hover:bg-white');
+                title.textContent = "Start Your Free Journey";
+                subtitle.textContent = "Sign up to get your personalized career roadmap.";
+            } else {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                loginTab.classList.add('color-primary', 'text-white', 'shadow-md');
+                loginTab.classList.remove('bg-white', 'text-gray-600', 'hover:bg-white');
+                registerTab.classList.remove('color-primary', 'text-white', 'shadow-md');
+                registerTab.classList.add('text-gray-600', 'hover:bg-white');
+                title.textContent = "Welcome Back to SkillSync";
+                subtitle.textContent = "Log in to view your progress and next steps.";
+            }
+        }
+    </script>
+</body>
+</html>
