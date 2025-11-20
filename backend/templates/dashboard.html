@@ -42,7 +42,6 @@
                     <div>
                         <div class="text-4xl text-teal-600 mb-4">⚙️ Technical Skills</div>
                         <h2 class="text-2xl font-bold mb-3 text-gray-900">Level {{ gaps['Technical']['level'] }}/5</h2>
-                        <div class="h-5 bg-gray-200 rounded-full overflow-hidden mb-3"><div class="bg-teal-500 h-full" style="width: {{ gaps['Technical']['level'] * 20 }}%;"></div></div>
                         <p class="text-sm text-gray-600 mb-6">Gap: {{ gaps['Technical']['total_gap'] }} levels to close.</p>
                     </div>
                     <a href="{{ url_for('technical_roadmap') }}" class="color-primary text-white font-bold text-lg py-3 w-full rounded-xl-lg shadow-xl hover:opacity-90 text-center">Update Roadmap</a>
@@ -52,7 +51,9 @@
                     <div>
                         <div class="text-4xl text-teal-600 mb-4">💬 Soft Skills</div>
                         <h2 class="text-2xl font-bold mb-3 text-gray-900">Level {{ gaps['Soft']['level'] }}/5</h2>
-                        <div class="h-5 bg-gray-200 rounded-full overflow-hidden mb-3"><div class="bg-sky-500 h-full" style="width: {{ gaps['Soft']['level'] * 20 }}%;"></div></div>
+                        <div class="h-5 bg-gray-200 rounded-full overflow-hidden mb-3">
+                            <div class="bg-sky-500 h-full" style="width: '{{ (gaps['Soft']['level']|int * 20) }}%';"></div>
+                        </div>
                         <p class="text-sm text-gray-600 mb-6">Gap: {{ gaps['Soft']['total_gap'] }} levels to close.</p>
                     </div>
                     <a href="{{ url_for('non_tech') }}" class="color-accent text-white font-bold text-lg py-3 w-full rounded-xl-lg shadow-xl hover:opacity-90 text-center">Soft Skill Activities</a>
