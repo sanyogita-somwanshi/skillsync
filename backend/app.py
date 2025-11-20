@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, current_user, logout_user, UserMixin, login_required
 from sqlalchemy import func
+import os
 
 app = Flask(__name__)
 
@@ -52,15 +53,8 @@ class Feedback(db.Model):
 
 # --- DATA SEEDING (This fills your database automatically!) ---
 def seed_database():
-    # If database has ANY skills, assume it's seeded.
-    # To force re-seeding with new skills, you might need to delete the old DB file or drop tables.
-    # But for now, let's just check if it's empty.
+    # We check if there are ANY skills. If not, we seed.
     if Skill.query.first():
-        # Optional: Check if specific new skills exist, if not add them.
-        # For simplicity, we'll just return if ANY data exists.
-        # To fully update, you'd typically drop the table or use a migration tool.
-        # For this quick fix, we will just return. 
-        # If you want to FORCE update, delete the 'instance/skillsync.db' file locally/on render.
         return 
 
     print("Seeding database with detailed roadmap skills...")
@@ -80,6 +74,7 @@ def seed_database():
 
     for role, skills in roadmap_data.items():
         for skill_name in skills:
+            # Check if skill exists to avoid duplicates, then add
             if not Skill.query.filter_by(name=skill_name).first():
                 db.session.add(Skill(name=skill_name, category='Technical', industry_need_level=5, roadmap_group=role))
 
@@ -277,7 +272,7 @@ def review_form():
 # We run this outside __main__ so Gunicorn sees it
 with app.app_context():
     db.create_all()     # 1. Create tables
-    seed_database()     # 2. Fill tables with ALL default skills
+    seed_database()     # 2. Fill tables with default skills
 
 if __name__ == '__main__':
     app.run(debug=True)
