@@ -51,13 +51,9 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     message = db.Column(db.Text, nullable=False)
 
-# --- DATA SEEDING (This fills your database automatically!) ---
+# --- DATA SEEDING (FORCE UPDATE VERSION) ---
 def seed_database():
-    # We check if there are ANY skills. If not, we seed.
-    if Skill.query.first():
-        return 
-
-    print("Seeding database with detailed roadmap skills...")
+    print("Checking and seeding database...")
     
     # --- TECHNICAL ROADMAP SKILLS ---
     roadmap_data = {
@@ -74,8 +70,9 @@ def seed_database():
 
     for role, skills in roadmap_data.items():
         for skill_name in skills:
-            # Check if skill exists to avoid duplicates, then add
+            # Loop through EVERY skill and add it if missing
             if not Skill.query.filter_by(name=skill_name).first():
+                print(f"Adding missing skill: {skill_name}")
                 db.session.add(Skill(name=skill_name, category='Technical', industry_need_level=5, roadmap_group=role))
 
     # --- SOFT SKILLS ---
@@ -86,13 +83,13 @@ def seed_database():
     ]
     for name in soft_skills:
         if not Skill.query.filter_by(name=name).first():
+            print(f"Adding missing skill: {name}")
             db.session.add(Skill(name=name, category='Soft', industry_need_level=5, roadmap_group='General'))
 
     db.session.commit()
-    print("Database seeded successfully!")
+    print("Database check complete!")
 
 # --- DATA ---
-# This list matches the keys in our seed function to populate the dropdown
 ROADMAP_GROUPS = [
     "Web Developer", "Cybersecurity Analyst", "Ethical Hacker", 
     "AI/ML Engineer", "Data Scientist", "Data Analyst", 
@@ -169,7 +166,7 @@ def technical_roadmap():
             'id': s.id, 'name': s.name, 'industryNeed': s.industry_need_level,
             'currentLevel': u_skill.current_level if u_skill else 1,
             'completedCount': u_skill.completed_activities_count if u_skill else 0,
-            'roadmapGroup': s.roadmap_group # Pass this to frontend to filter by dropdown
+            'roadmapGroup': s.roadmap_group 
         })
     return render_template('technical-roadmap.html', roadmap_groups=ROADMAP_GROUPS, skill_data=skill_data)
 
@@ -244,7 +241,6 @@ def save_soft_skills():
 
 @app.route('/feedback.html')
 def feedback():
-    # Show all feedbacks on the dedicated feedback page
     try:
         feedbacks = Feedback.query.order_by(Feedback.id.desc()).all()
     except:
@@ -272,7 +268,7 @@ def review_form():
 # We run this outside __main__ so Gunicorn sees it
 with app.app_context():
     db.create_all()     # 1. Create tables
-    seed_database()     # 2. Fill tables with default skills
+    seed_database()     # 2. Fill tables (NO EARLY EXIT this time)
 
 if __name__ == '__main__':
     app.run(debug=True)
