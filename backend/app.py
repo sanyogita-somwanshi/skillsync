@@ -34,6 +34,8 @@ class Skill(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     category = db.Column(db.String(50), nullable=False)
     industry_need_level = db.Column(db.Integer, nullable=False)
+    # New field to group skills by roadmap (e.g., "Web Developer")
+    roadmap_group = db.Column(db.String(100), nullable=True)
 
 class StudentSkill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,23 +52,38 @@ class Feedback(db.Model):
 
 # --- DATA SEEDING (This fills your database automatically!) ---
 def seed_database():
-    # Check if database already has skills. If yes, stop (to avoid duplicates).
+    # If database has ANY skills, assume it's seeded.
+    # To force re-seeding with new skills, you might need to delete the old DB file or drop tables.
+    # But for now, let's just check if it's empty.
     if Skill.query.first():
+        # Optional: Check if specific new skills exist, if not add them.
+        # For simplicity, we'll just return if ANY data exists.
+        # To fully update, you'd typically drop the table or use a migration tool.
+        # For this quick fix, we will just return. 
+        # If you want to FORCE update, delete the 'instance/skillsync.db' file locally/on render.
         return 
 
-    print("Seeding database with initial skills...")
+    print("Seeding database with detailed roadmap skills...")
     
-    # Technical Skills
-    tech_skills = [
-        "Python", "JavaScript", "HTML/CSS", "SQL", "React", 
-        "Node.js", "Data Analysis", "Machine Learning", "Git", "Java"
-    ]
-    for name in tech_skills:
-        # Only add if it doesn't exist
-        if not Skill.query.filter_by(name=name).first():
-            db.session.add(Skill(name=name, category='Technical', industry_need_level=5))
+    # --- TECHNICAL ROADMAP SKILLS ---
+    roadmap_data = {
+        "Web Developer": ["HTML basics", "CSS basics", "JavaScript fundamentals", "Git & GitHub", "APIs & JSON", "Frontend framework (React)", "Deployment (Netlify/Vercel)"],
+        "Cybersecurity Analyst": ["Networking basics", "Linux fundamentals", "Security concepts (CIA triad, attacks)", "Tools: Nmap, Wireshark", "SIEM basics (Splunk/ELK)", "Incident response", "Basic scripting (Python/Bash)"],
+        "Ethical Hacker": ["Linux + Networking", "Security basics", "Kali Linux tools", "Web application hacking (OWASP Top 10)", "Vulnerability scanning", "Metasploit basics", "Reporting & documentation"],
+        "AI/ML Engineer": ["Python fundamentals", "NumPy, Pandas, Matplotlib", "Data preprocessing", "Machine learning algorithms", "Model training & evaluation", "Deep learning (Neural networks)", "Deployment basics (Flask/FastAPI)"],
+        "Data Scientist": ["Python + Statistics", "Data cleaning (Pandas)", "EDA (visualization)", "ML models", "Feature engineering", "Model evaluation", "Dashboard/Reporting basics"],
+        "Data Analyst": ["Excel fundamentals", "SQL basics", "Python basics (optional)", "Data cleaning", "Visualization tools (Power BI/Tableau)", "Reports & dashboards", "Basic analytics case studies"],
+        "Cloud Engineer": ["Linux basics", "Networking fundamentals", "Cloud provider basics (AWS/Azure/GCP)", "Storage + Compute services", "IAM & security", "Deployment (EC2, S3, Load Balancers)", "Basic DevOps (CI/CD)"],
+        "UI/UX Designer": ["UX basics + design principles", "User research", "Wireframing (low-fidelity)", "UI design (Figma)", "Prototyping", "Usability testing", "Design system basics"],
+        "Full Stack Developer": ["HTML + CSS", "JavaScript", "Frontend framework (React)", "Backend basics (Node.js / Python)", "Databases (SQL/NoSQL)", "APIs + Authentication", "Deployment (Render, Vercel, AWS)"]
+    }
 
-    # Soft Skills (Must match your ACTIVITIES keys exactly)
+    for role, skills in roadmap_data.items():
+        for skill_name in skills:
+            if not Skill.query.filter_by(name=skill_name).first():
+                db.session.add(Skill(name=skill_name, category='Technical', industry_need_level=5, roadmap_group=role))
+
+    # --- SOFT SKILLS ---
     soft_skills = [
         'Communication Skills', 'Time Management', 'Public Speaking',
         'Teamwork Skills', 'Critical Thinking', 'Leadership Skills',
@@ -74,22 +91,22 @@ def seed_database():
     ]
     for name in soft_skills:
         if not Skill.query.filter_by(name=name).first():
-            db.session.add(Skill(name=name, category='Soft', industry_need_level=5))
+            db.session.add(Skill(name=name, category='Soft', industry_need_level=5, roadmap_group='General'))
 
     db.session.commit()
     print("Database seeded successfully!")
 
 # --- DATA ---
+# This list matches the keys in our seed function to populate the dropdown
 ROADMAP_GROUPS = [
-    "Web Developer", "Data Scientist", "Cybersecurity Analyst", 
-    "App Developer", "Cloud Engineer", "AI/ML Engineer", "UI/UX Designer",
-    "Ethical Hacker", "Data Analyst", "Full Stack Developer" 
+    "Web Developer", "Cybersecurity Analyst", "Ethical Hacker", 
+    "AI/ML Engineer", "Data Scientist", "Data Analyst", 
+    "Cloud Engineer", "UI/UX Designer", "Full Stack Developer" 
 ]
 
 # --- ROUTES ---
 @app.route('/')
 def home():
-    # Show latest 3 reviews on homepage
     try:
         feedbacks = Feedback.query.order_by(Feedback.id.desc()).limit(3).all()
     except:
@@ -148,6 +165,7 @@ def dashboard():
 @app.route('/technical-roadmap.html')
 @login_required
 def technical_roadmap():
+    # Fetch all technical skills
     all_skills = Skill.query.filter_by(category='Technical').all()
     skill_data = []
     for s in all_skills:
@@ -155,7 +173,8 @@ def technical_roadmap():
         skill_data.append({
             'id': s.id, 'name': s.name, 'industryNeed': s.industry_need_level,
             'currentLevel': u_skill.current_level if u_skill else 1,
-            'completedCount': u_skill.completed_activities_count if u_skill else 0
+            'completedCount': u_skill.completed_activities_count if u_skill else 0,
+            'roadmapGroup': s.roadmap_group # Pass this to frontend to filter by dropdown
         })
     return render_template('technical-roadmap.html', roadmap_groups=ROADMAP_GROUPS, skill_data=skill_data)
 
@@ -258,7 +277,7 @@ def review_form():
 # We run this outside __main__ so Gunicorn sees it
 with app.app_context():
     db.create_all()     # 1. Create tables
-    seed_database()     # 2. Fill tables with default skills
+    seed_database()     # 2. Fill tables with ALL default skills
 
 if __name__ == '__main__':
     app.run(debug=True)
