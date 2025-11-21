@@ -65,8 +65,6 @@ def seed_database():
         'Data Analyst': [{'name': 'Excel fundamentals', 'industryNeed': 4}, {'name': 'SQL basics (joins, subqueries)', 'industryNeed': 5}, {'name': 'Visualization tools (Power BI/Tableau)', 'industryNeed': 4}, {'name': 'Reports & dashboards', 'industryNeed': 3}, {'name': 'Basic analytics case studies', 'industryNeed': 3}],
         'Full Stack Developer': [{'name': 'HTML & CSS', 'industryNeed': 4}, {'name': 'JavaScript', 'industryNeed': 5}, {'name': 'Frontend Framework (React/Vue)', 'industryNeed': 5}, {'name': 'Backend Language (Node.js / Python)', 'industryNeed': 4}, {'name': 'Database (SQL/NoSQL)', 'industryNeed': 4}, {'name': 'APIs + Authentication', 'industryNeed': 4}, {'name': 'Deployment (Render, Vercel, AWS)', 'industryNeed': 4}]
     }
-
-    print("Checking and seeding database...")
     with app.app_context():
         for role, skills in ROADMAP_DATA.items():
             for skill_data in skills:
@@ -78,9 +76,7 @@ def seed_database():
         for name in soft_skills:
             if not Skill.query.filter_by(name=name).first():
                 db.session.add(Skill(name=name, category='Soft', industry_need_level=5, roadmap_group='General'))
-
         db.session.commit()
-        print("Database sync complete!")
 
 # --- ROUTES ---
 @app.route('/')
@@ -100,10 +96,8 @@ def register():
     email = request.form.get('email')
     username = request.form.get('username')
     password = request.form.get('password')
-    
     if User.query.filter((User.email == email) | (User.username == username)).first():
         return redirect(url_for('register_page'))
-        
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
     user = User(email=email, username=username, password_hash=hashed_pw)
     db.session.add(user)
@@ -153,7 +147,6 @@ def technical_roadmap():
             'completedCount': u_skill.completed_activities_count if u_skill else 0,
             'roadmapGroup': s.roadmap_group 
         })
-    
     ROADMAP_GROUPS = ["Web Developer", "Cybersecurity Analyst", "Ethical Hacker", "AI/ML Engineer", "Data Scientist", "Data Analyst", "Cloud Engineer", "UI/UX Designer", "Full Stack Developer"]
     return render_template('technical-roadmap.html', roadmap_groups=ROADMAP_GROUPS, skill_data=skill_data)
 
@@ -245,19 +238,19 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- ROBUST CHATBOT PROXY (Tries Multiple Models) ---
+# --- UPDATED CHATBOT PROXY (Matches Your UI Models) ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
     API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
     
-    # List of models to try (in order of preference)
+    # THESE MATCH THE NAMES IN YOUR GOOGLE MENU
     models_to_try = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-pro",
-        "gemini-1.0-pro"
+        "gemini-2.0-flash-exp",    # Matches "Gemini 2.0 Flash"
+        "gemini-1.5-flash-latest", # Matches "Gemini Flash Latest"
+        "gemini-1.5-flash",        # Fallback
+        "gemini-1.5-pro"           # Fallback
     ]
     
     last_error = ""
@@ -270,11 +263,9 @@ def chat_proxy():
             response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
             
             if response.status_code == 200:
-                # SUCCESS! We found a working model
                 print(f"SUCCESS using model: {model}")
                 return jsonify(response.json())
             else:
-                # Failed, try next one
                 print(f"Failed model {model}: {response.text}")
                 last_error = response.text
                 
@@ -282,7 +273,6 @@ def chat_proxy():
             print(f"Connection error with {model}: {str(e)}")
             last_error = str(e)
 
-    # If all models fail
     return jsonify({"error": f"All models failed. Last error: {last_error}"}), 500
 
 # --- MAIN EXECUTION BLOCK ---
