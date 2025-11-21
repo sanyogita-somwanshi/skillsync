@@ -4,7 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, current_user, logout_user, UserMixin, login_required
 from sqlalchemy import func
 import os
-import requests  # Make sure to add this to requirements.txt
+import requests  # Crucial for the chatbot to talk to Google
 
 app = Flask(__name__)
 
@@ -51,9 +51,9 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     message = db.Column(db.Text, nullable=False)
 
-# --- CORRECTED DATA SEEDING ---
+# --- DATA SEEDING ---
 def seed_database():
-    # This data now MATCHES your Frontend JavaScript exactly
+    # Data matches Frontend exactly
     ROADMAP_DATA = {
         'Web Developer': [{'name': 'HTML & CSS', 'industryNeed': 4}, {'name': 'JavaScript', 'industryNeed': 5}, {'name': 'Git & GitHub', 'industryNeed': 4}, {'name': 'Frontend Framework (React/Vue)', 'industryNeed': 5}, {'name': 'Backend Language (Python/Node)', 'industryNeed': 4}, {'name': 'Database (SQL/NoSQL)', 'industryNeed': 3}, {'name': 'APIs (RESTful)', 'industryNeed': 4}, {'name': 'Deployment (Cloud/Hosting)', 'industryNeed': 3}],
         'Data Scientist': [{'name': 'Probability & Statistics', 'industryNeed': 4}, {'name': 'Python (Pandas, NumPy)', 'industryNeed': 5}, {'name': 'SQL', 'industryNeed': 4}, {'name': 'Data Cleaning & Preprocessing', 'industryNeed': 4}, {'name': 'Machine Learning', 'industryNeed': 5}, {'name': 'Data Visualization', 'industryNeed': 3}, {'name': 'Big Data (Spark/Hadoop)', 'industryNeed': 2}, {'name': 'Deployment (APIs/Cloud)', 'industryNeed': 3}],
@@ -71,13 +71,11 @@ def seed_database():
     with app.app_context():
         for role, skills in ROADMAP_DATA.items():
             for skill_data in skills:
-                # Check if skill exists
                 existing = Skill.query.filter_by(name=skill_data['name']).first()
                 if not existing:
                     print(f"Adding missing skill: {skill_data['name']}")
                     db.session.add(Skill(name=skill_data['name'], category='Technical', industry_need_level=skill_data['industryNeed'], roadmap_group=role))
         
-        # Soft Skills
         soft_skills = ['Communication Skills', 'Time Management', 'Public Speaking', 'Teamwork Skills', 'Critical Thinking', 'Leadership Skills', 'Creativity', 'Problem Solving', 'Emotional Intelligence']
         for name in soft_skills:
             if not Skill.query.filter_by(name=name).first():
@@ -249,16 +247,15 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- CHATBOT PROXY ROUTE (Fixes Connection Error) ---
+# --- CHATBOT PROXY ROUTE (With New Key) ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
     
-    # UPDATED API KEY
+    # YOUR NEW KEY
     API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
     
-    # Using a stable model version to prevent errors
     URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     payload = {
@@ -267,7 +264,7 @@ def chat_proxy():
     }
     
     try:
-        response = requests.post(URL, json=payload)
+        response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
