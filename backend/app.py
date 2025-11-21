@@ -4,7 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, current_user, logout_user, UserMixin, login_required
 from sqlalchemy import func
 import os
-import requests  # Make sure to add this to requirements.txt
+import requests
 
 app = Flask(__name__)
 
@@ -245,32 +245,45 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- CHATBOT PROXY ROUTE (FIXED: Using gemini-1.5-flash) ---
+# --- ROBUST CHATBOT PROXY (Tries Multiple Models) ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
-    
-    # YOUR NEW KEY
     API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
     
-    # The correct model that is currently available
-    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # List of models to try (in order of preference)
+    models_to_try = [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-pro",
+        "gemini-1.0-pro"
+    ]
     
-    payload = {
-        "contents": [{"parts": [{"text": user_message}]}],
-        "systemInstruction": {"parts": [{"text": "You are the helpful AI Guide for the SkillSync website. Your goal is to help students understand the platform."}]} 
-    }
-    
-    try:
-        response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
+    last_error = ""
+
+    for model in models_to_try:
+        URL = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={API_KEY}"
+        payload = { "contents": [{"parts": [{"text": user_message}]}] }
         
-        print("GOOGLE RESPONSE:", response.text) # Keep for debugging
-        
-        return jsonify(response.json())
-    except Exception as e:
-        print("SERVER ERROR:", str(e))
-        return jsonify({"error": str(e)}), 500
+        try:
+            response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
+            
+            if response.status_code == 200:
+                # SUCCESS! We found a working model
+                print(f"SUCCESS using model: {model}")
+                return jsonify(response.json())
+            else:
+                # Failed, try next one
+                print(f"Failed model {model}: {response.text}")
+                last_error = response.text
+                
+        except Exception as e:
+            print(f"Connection error with {model}: {str(e)}")
+            last_error = str(e)
+
+    # If all models fail
+    return jsonify({"error": f"All models failed. Last error: {last_error}"}), 500
 
 # --- MAIN EXECUTION BLOCK ---
 with app.app_context():
