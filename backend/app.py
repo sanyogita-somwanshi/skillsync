@@ -4,7 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, current_user, logout_user, UserMixin, login_required
 from sqlalchemy import func
 import os
-import requests  # Crucial for the chatbot to talk to Google
+import requests  # Make sure to add this to requirements.txt
 
 app = Flask(__name__)
 
@@ -53,7 +53,6 @@ class Feedback(db.Model):
 
 # --- DATA SEEDING ---
 def seed_database():
-    # Data matches Frontend exactly
     ROADMAP_DATA = {
         'Web Developer': [{'name': 'HTML & CSS', 'industryNeed': 4}, {'name': 'JavaScript', 'industryNeed': 5}, {'name': 'Git & GitHub', 'industryNeed': 4}, {'name': 'Frontend Framework (React/Vue)', 'industryNeed': 5}, {'name': 'Backend Language (Python/Node)', 'industryNeed': 4}, {'name': 'Database (SQL/NoSQL)', 'industryNeed': 3}, {'name': 'APIs (RESTful)', 'industryNeed': 4}, {'name': 'Deployment (Cloud/Hosting)', 'industryNeed': 3}],
         'Data Scientist': [{'name': 'Probability & Statistics', 'industryNeed': 4}, {'name': 'Python (Pandas, NumPy)', 'industryNeed': 5}, {'name': 'SQL', 'industryNeed': 4}, {'name': 'Data Cleaning & Preprocessing', 'industryNeed': 4}, {'name': 'Machine Learning', 'industryNeed': 5}, {'name': 'Data Visualization', 'industryNeed': 3}, {'name': 'Big Data (Spark/Hadoop)', 'industryNeed': 2}, {'name': 'Deployment (APIs/Cloud)', 'industryNeed': 3}],
@@ -73,7 +72,6 @@ def seed_database():
             for skill_data in skills:
                 existing = Skill.query.filter_by(name=skill_data['name']).first()
                 if not existing:
-                    print(f"Adding missing skill: {skill_data['name']}")
                     db.session.add(Skill(name=skill_data['name'], category='Technical', industry_need_level=skill_data['industryNeed'], roadmap_group=role))
         
         soft_skills = ['Communication Skills', 'Time Management', 'Public Speaking', 'Teamwork Skills', 'Critical Thinking', 'Leadership Skills', 'Creativity', 'Problem Solving', 'Emotional Intelligence']
@@ -247,26 +245,30 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- CHATBOT PROXY ROUTE (With New Key) ---
+# --- CHATBOT PROXY ROUTE (FIXED 404 ERROR) ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
     
-    # YOUR NEW KEY
     API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
     
-    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # WE SWITCHED TO "gemini-pro" to fix the 404 error
+    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
     
     payload = {
-        "contents": [{"parts": [{"text": user_message}]}],
-        "systemInstruction": {"parts": [{"text": "You are the helpful AI Guide for the SkillSync website. Your goal is to help students understand the platform."}]} 
+        "contents": [{"parts": [{"text": user_message}]}] 
     }
     
     try:
         response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
+        
+        # Print response to Render Logs to help us debug if needed
+        print("GOOGLE RESPONSE:", response.text)
+        
         return jsonify(response.json())
     except Exception as e:
+        print("SERVER ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
 
 # --- MAIN EXECUTION BLOCK ---
