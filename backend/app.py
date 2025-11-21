@@ -255,7 +255,9 @@ def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
     
-    API_KEY = "AIzaSyDJ_Zv3pC_c0CRlm_ULZk1h7BgN6ZW4wN4" # Replace with your actual key if this isn't it
+    # UPDATED API KEY
+    API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
+    
     # Using a stable model version to prevent errors
     URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
@@ -276,4 +278,5 @@ with app.app_context():
     seed_database()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True) 
+    
