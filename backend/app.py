@@ -234,34 +234,27 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- MODEL FINDER PROXY (The Fix) ---
+# --- FINAL WORKING CHATBOT PROXY ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
-    # YOUR NEW KEY
-    API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
+    data = request.json
+    user_message = data.get('message', '')
     
-    # 1. Ask Google for the list of available models
-    list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={API_KEY}"
+    API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU"
+    
+    # WE ARE USING THE MODEL YOU CONFIRMED WORKS
+    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+    
+    payload = {
+        "contents": [{"parts": [{"text": user_message}]}],
+        "systemInstruction": {"parts": [{"text": "You are the helpful AI Guide for the SkillSync website. Your goal is to help students understand the platform."}]} 
+    }
     
     try:
-        list_response = requests.get(list_url)
-        
-        if list_response.status_code == 200:
-            models = list_response.json().get('models', [])
-            model_names = [m['name'] for m in models if 'generateContent' in m.get('supportedGenerationMethods', [])]
-            
-            # Create a message to show the user
-            ai_message = "I found these working models for your Key:\n\n" + "\n".join(model_names)
-            ai_message += "\n\n(Please tell the developer to use one of these codes!)"
-            
-            return jsonify({
-                "candidates": [{"content": {"parts": [{"text": ai_message}]}}]
-            })
-        else:
-            return jsonify({"candidates": [{"content": {"parts": [{"text": "Could not list models. Error: " + list_response.text}]}}]})
-            
+        response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
+        return jsonify(response.json())
     except Exception as e:
-        return jsonify({"candidates": [{"content": {"parts": [{"text": "Server crash: " + str(e)}]}}]})
+        return jsonify({"error": str(e)}), 500
 
 # --- MAIN EXECUTION BLOCK ---
 with app.app_context():
