@@ -150,7 +150,6 @@
     </div>
     
     <script>
-        const API_KEY = "AIzaSyDJ_Zv3pC_c0CRlm_ULZk1h7BgN6ZW4wN4"; 
         const ALL_DB_SKILLS = {{ skill_data | tojson | safe }};
         
         const ROADMAP_STRUCTURE = {
@@ -222,7 +221,7 @@
             const roadmapSkills = requiredSkillNames.map(name => findSkillByName(name)).filter(skill => skill);
 
             if (roadmapSkills.length === 0) {
-                 assessmentContainer.innerHTML = '<p class="text-center text-red-500 font-semibold">Error: No matching skills found in DB.</p>';
+                 assessmentContainer.innerHTML = '<p class="text-center text-red-500 font-semibold">Error: No matching skills found in DB. Please run reset_db.py to update skills.</p>';
                  return;
             }
             
@@ -322,7 +321,7 @@
             }
         }
 
-        // --- Chatbot Logic ---
+        // --- UPDATED CHATBOT LOGIC ---
         function toggleChatbot() { 
             const w = document.getElementById('chatbot-window'); 
             w.style.display = (w.style.display === 'none' || w.style.display === '') ? 'flex' : 'none'; 
@@ -339,14 +338,18 @@
             box.scrollTop = box.scrollHeight;
             
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text }] }] })
+                // NEW: Calls the Python backend instead of Google directly
+                const res = await fetch('/api/chat', {
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text })
                 });
+                
                 const data = await res.json();
-                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't answer that.";
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm currently offline. Please try again later.";
                 box.innerHTML += `<div class="ai-message">${reply}</div>`;
             } catch(e) {
+                console.error(e);
                 box.innerHTML += `<div class="ai-message">Error connecting to AI.</div>`;
             }
             box.scrollTop = box.scrollHeight;
@@ -363,4 +366,4 @@
         });
     </script>
 </body>
-</html>
+</html> 
