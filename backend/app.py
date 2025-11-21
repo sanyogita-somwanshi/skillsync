@@ -71,7 +71,6 @@ def seed_database():
                 existing = Skill.query.filter_by(name=skill_data['name']).first()
                 if not existing:
                     db.session.add(Skill(name=skill_data['name'], category='Technical', industry_need_level=skill_data['industryNeed'], roadmap_group=role))
-        
         soft_skills = ['Communication Skills', 'Time Management', 'Public Speaking', 'Teamwork Skills', 'Critical Thinking', 'Leadership Skills', 'Creativity', 'Problem Solving', 'Emotional Intelligence']
         for name in soft_skills:
             if not Skill.query.filter_by(name=name).first():
@@ -125,13 +124,10 @@ def dashboard():
         Skill.category,
         (Skill.industry_need_level - func.avg(StudentSkill.current_level)).label('avg_gap')
     ).join(StudentSkill).filter(StudentSkill.user_id == current_user.id).group_by(Skill.category).all()
-    
     gaps = {'Technical': {'total_gap': 5, 'level': 0}, 'Soft': {'total_gap': 5, 'level': 0}, 'status_message': f'Welcome, {current_user.username}. Start your assessment.'}
-    
     for category, avg_gap in progress_query:
         current_lvl = max(0, 5 - round(avg_gap))
         gaps[category] = {'total_gap': round(avg_gap, 1), 'level': current_lvl}
-    
     return render_template('dashboard.html', user_email=current_user.email, gaps=gaps, username=current_user.username)
 
 @app.route('/technical-roadmap.html')
@@ -238,42 +234,34 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- UPDATED CHATBOT PROXY (Matches Your UI Models) ---
+# --- MODEL FINDER PROXY (The Fix) ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
-    data = request.json
-    user_message = data.get('message', '')
+    # YOUR NEW KEY
     API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
     
-    # THESE MATCH THE NAMES IN YOUR GOOGLE MENU
-    models_to_try = [
-        "gemini-2.0-flash-exp",    # Matches "Gemini 2.0 Flash"
-        "gemini-1.5-flash-latest", # Matches "Gemini Flash Latest"
-        "gemini-1.5-flash",        # Fallback
-        "gemini-1.5-pro"           # Fallback
-    ]
+    # 1. Ask Google for the list of available models
+    list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={API_KEY}"
     
-    last_error = ""
-
-    for model in models_to_try:
-        URL = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={API_KEY}"
-        payload = { "contents": [{"parts": [{"text": user_message}]}] }
+    try:
+        list_response = requests.get(list_url)
         
-        try:
-            response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
+        if list_response.status_code == 200:
+            models = list_response.json().get('models', [])
+            model_names = [m['name'] for m in models if 'generateContent' in m.get('supportedGenerationMethods', [])]
             
-            if response.status_code == 200:
-                print(f"SUCCESS using model: {model}")
-                return jsonify(response.json())
-            else:
-                print(f"Failed model {model}: {response.text}")
-                last_error = response.text
-                
-        except Exception as e:
-            print(f"Connection error with {model}: {str(e)}")
-            last_error = str(e)
-
-    return jsonify({"error": f"All models failed. Last error: {last_error}"}), 500
+            # Create a message to show the user
+            ai_message = "I found these working models for your Key:\n\n" + "\n".join(model_names)
+            ai_message += "\n\n(Please tell the developer to use one of these codes!)"
+            
+            return jsonify({
+                "candidates": [{"content": {"parts": [{"text": ai_message}]}}]
+            })
+        else:
+            return jsonify({"candidates": [{"content": {"parts": [{"text": "Could not list models. Error: " + list_response.text}]}}]})
+            
+    except Exception as e:
+        return jsonify({"candidates": [{"content": {"parts": [{"text": "Server crash: " + str(e)}]}}]})
 
 # --- MAIN EXECUTION BLOCK ---
 with app.app_context():
