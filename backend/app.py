@@ -4,6 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, current_user, logout_user, UserMixin, login_required
 from sqlalchemy import func
 import os
+import requests  # Make sure to add this to requirements.txt
 
 app = Flask(__name__)
 
@@ -35,7 +36,6 @@ class Skill(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     category = db.Column(db.String(50), nullable=False)
     industry_need_level = db.Column(db.Integer, nullable=False)
-    # New field to group skills by roadmap (e.g., "Web Developer")
     roadmap_group = db.Column(db.String(100), nullable=True)
 
 class StudentSkill(db.Model):
@@ -51,50 +51,40 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     message = db.Column(db.Text, nullable=False)
 
-# --- DATA SEEDING (FORCE UPDATE VERSION) ---
+# --- CORRECTED DATA SEEDING ---
 def seed_database():
-    print("Checking and seeding database...")
-    
-    # --- TECHNICAL ROADMAP SKILLS ---
-    roadmap_data = {
-        "Web Developer": ["HTML basics", "CSS basics", "JavaScript fundamentals", "Git & GitHub", "APIs & JSON", "Frontend framework (React)", "Deployment (Netlify/Vercel)"],
-        "Cybersecurity Analyst": ["Networking basics", "Linux fundamentals", "Security concepts (CIA triad, attacks)", "Tools: Nmap, Wireshark", "SIEM basics (Splunk/ELK)", "Incident response", "Basic scripting (Python/Bash)"],
-        "Ethical Hacker": ["Linux + Networking", "Security basics", "Kali Linux tools", "Web application hacking (OWASP Top 10)", "Vulnerability scanning", "Metasploit basics", "Reporting & documentation"],
-        "AI/ML Engineer": ["Python fundamentals", "NumPy, Pandas, Matplotlib", "Data preprocessing", "Machine learning algorithms", "Model training & evaluation", "Deep learning (Neural networks)", "Deployment basics (Flask/FastAPI)"],
-        "Data Scientist": ["Python + Statistics", "Data cleaning (Pandas)", "EDA (visualization)", "ML models", "Feature engineering", "Model evaluation", "Dashboard/Reporting basics"],
-        "Data Analyst": ["Excel fundamentals", "SQL basics", "Python basics (optional)", "Data cleaning", "Visualization tools (Power BI/Tableau)", "Reports & dashboards", "Basic analytics case studies"],
-        "Cloud Engineer": ["Linux basics", "Networking fundamentals", "Cloud provider basics (AWS/Azure/GCP)", "Storage + Compute services", "IAM & security", "Deployment (EC2, S3, Load Balancers)", "Basic DevOps (CI/CD)"],
-        "UI/UX Designer": ["UX basics + design principles", "User research", "Wireframing (low-fidelity)", "UI design (Figma)", "Prototyping", "Usability testing", "Design system basics"],
-        "Full Stack Developer": ["HTML + CSS", "JavaScript", "Frontend framework (React)", "Backend basics (Node.js / Python)", "Databases (SQL/NoSQL)", "APIs + Authentication", "Deployment (Render, Vercel, AWS)"]
+    # This data now MATCHES your Frontend JavaScript exactly
+    ROADMAP_DATA = {
+        'Web Developer': [{'name': 'HTML & CSS', 'industryNeed': 4}, {'name': 'JavaScript', 'industryNeed': 5}, {'name': 'Git & GitHub', 'industryNeed': 4}, {'name': 'Frontend Framework (React/Vue)', 'industryNeed': 5}, {'name': 'Backend Language (Python/Node)', 'industryNeed': 4}, {'name': 'Database (SQL/NoSQL)', 'industryNeed': 3}, {'name': 'APIs (RESTful)', 'industryNeed': 4}, {'name': 'Deployment (Cloud/Hosting)', 'industryNeed': 3}],
+        'Data Scientist': [{'name': 'Probability & Statistics', 'industryNeed': 4}, {'name': 'Python (Pandas, NumPy)', 'industryNeed': 5}, {'name': 'SQL', 'industryNeed': 4}, {'name': 'Data Cleaning & Preprocessing', 'industryNeed': 4}, {'name': 'Machine Learning', 'industryNeed': 5}, {'name': 'Data Visualization', 'industryNeed': 3}, {'name': 'Big Data (Spark/Hadoop)', 'industryNeed': 2}, {'name': 'Deployment (APIs/Cloud)', 'industryNeed': 3}],
+        'Cybersecurity Analyst': [{'name': 'Computer Fundamentals', 'industryNeed': 3}, {'name': 'Linux & Networking', 'industryNeed': 4}, {'name': 'Python for Automation', 'industryNeed': 3}, {'name': 'Security Tools (Nmap, Wireshark)', 'industryNeed': 4}, {'name': 'Web Security (OWASP)', 'industryNeed': 5}, {'name': 'Penetration Testing Basics', 'industryNeed': 4}, {'name': 'SOC/Blue Team Basics', 'industryNeed': 3}],
+        'App Developer': [{'name': 'Java or Kotlin', 'industryNeed': 4}, {'name': 'Android Studio', 'industryNeed': 4}, {'name': 'UI/UX basics', 'industryNeed': 3}, {'name': 'Android components', 'industryNeed': 4}, {'name': 'Databases (Room, SQLite)', 'industryNeed': 3}, {'name': 'API integration', 'industryNeed': 4}, {'name': 'Firebase', 'industryNeed': 3}],
+        'Cloud Engineer': [{'name': 'Linux basics', 'industryNeed': 3}, {'name': 'Networking (VPC, Subnets)', 'industryNeed': 4}, {'name': 'Cloud provider (AWS/Azure/GCP)', 'industryNeed': 5}, {'name': 'IAM', 'industryNeed': 4}, {'name': 'Compute (EC2, VM)', 'industryNeed': 5}, {'name': 'Storage (S3/Blob)', 'industryNeed': 3}, {'name': 'Databases (RDS, DynamoDB)', 'industryNeed': 3}, {'name': 'Monitoring & Security', 'industryNeed': 4}],
+        'AI/ML Engineer': [{'name': 'Python (Adv. Libraries)', 'industryNeed': 4}, {'name': 'Stats & Probability', 'industryNeed': 4}, {'name': 'ML Algorithms', 'industryNeed': 5}, {'name': 'Deep Learning (TensorFlow/PyTorch)', 'industryNeed': 5}, {'name': 'Data Engineering basics', 'industryNeed': 3}, {'name': 'NLP / CV', 'industryNeed': 4}, {'name': 'Deployment (Docker, APIs)', 'industryNeed': 4}],
+        'UI/UX Designer': [{'name': 'Design principles', 'industryNeed': 4}, {'name': 'Figma', 'industryNeed': 5}, {'name': 'Typography & Color Theory', 'industryNeed': 3}, {'name': 'Wireframes', 'industryNeed': 3}, {'name': 'Prototypes', 'industryNeed': 4}, {'name': 'User research', 'industryNeed': 4}, {'name': 'Portfolio building', 'industryNeed': 3}],
+        'Ethical Hacker': [{'name': 'Linux fundamentals', 'industryNeed': 4}, {'name': 'Networking basics', 'industryNeed': 4}, {'name': 'Security concepts (CIA triad, attacks)', 'industryNeed': 5}, {'name': 'Kali Linux tools', 'industryNeed': 5}, {'name': 'Vulnerability scanning', 'industryNeed': 4}, {'name': 'Metasploit basics', 'industryNeed': 3}, {'name': 'Reporting & documentation', 'industryNeed': 3}],
+        'Data Analyst': [{'name': 'Excel fundamentals', 'industryNeed': 4}, {'name': 'SQL basics (joins, subqueries)', 'industryNeed': 5}, {'name': 'Visualization tools (Power BI/Tableau)', 'industryNeed': 4}, {'name': 'Reports & dashboards', 'industryNeed': 3}, {'name': 'Basic analytics case studies', 'industryNeed': 3}],
+        'Full Stack Developer': [{'name': 'HTML & CSS', 'industryNeed': 4}, {'name': 'JavaScript', 'industryNeed': 5}, {'name': 'Frontend Framework (React/Vue)', 'industryNeed': 5}, {'name': 'Backend Language (Node.js / Python)', 'industryNeed': 4}, {'name': 'Database (SQL/NoSQL)', 'industryNeed': 4}, {'name': 'APIs + Authentication', 'industryNeed': 4}, {'name': 'Deployment (Render, Vercel, AWS)', 'industryNeed': 4}]
     }
 
-    for role, skills in roadmap_data.items():
-        for skill_name in skills:
-            # Loop through EVERY skill and add it if missing
-            if not Skill.query.filter_by(name=skill_name).first():
-                print(f"Adding missing skill: {skill_name}")
-                db.session.add(Skill(name=skill_name, category='Technical', industry_need_level=5, roadmap_group=role))
+    print("Checking and seeding database...")
+    with app.app_context():
+        for role, skills in ROADMAP_DATA.items():
+            for skill_data in skills:
+                # Check if skill exists
+                existing = Skill.query.filter_by(name=skill_data['name']).first()
+                if not existing:
+                    print(f"Adding missing skill: {skill_data['name']}")
+                    db.session.add(Skill(name=skill_data['name'], category='Technical', industry_need_level=skill_data['industryNeed'], roadmap_group=role))
+        
+        # Soft Skills
+        soft_skills = ['Communication Skills', 'Time Management', 'Public Speaking', 'Teamwork Skills', 'Critical Thinking', 'Leadership Skills', 'Creativity', 'Problem Solving', 'Emotional Intelligence']
+        for name in soft_skills:
+            if not Skill.query.filter_by(name=name).first():
+                db.session.add(Skill(name=name, category='Soft', industry_need_level=5, roadmap_group='General'))
 
-    # --- SOFT SKILLS ---
-    soft_skills = [
-        'Communication Skills', 'Time Management', 'Public Speaking',
-        'Teamwork Skills', 'Critical Thinking', 'Leadership Skills',
-        'Creativity', 'Problem Solving', 'Emotional Intelligence'
-    ]
-    for name in soft_skills:
-        if not Skill.query.filter_by(name=name).first():
-            print(f"Adding missing skill: {name}")
-            db.session.add(Skill(name=name, category='Soft', industry_need_level=5, roadmap_group='General'))
-
-    db.session.commit()
-    print("Database check complete!")
-
-# --- DATA ---
-ROADMAP_GROUPS = [
-    "Web Developer", "Cybersecurity Analyst", "Ethical Hacker", 
-    "AI/ML Engineer", "Data Scientist", "Data Analyst", 
-    "Cloud Engineer", "UI/UX Designer", "Full Stack Developer" 
-]
+        db.session.commit()
+        print("Database sync complete!")
 
 # --- ROUTES ---
 @app.route('/')
@@ -157,7 +147,6 @@ def dashboard():
 @app.route('/technical-roadmap.html')
 @login_required
 def technical_roadmap():
-    # Fetch all technical skills
     all_skills = Skill.query.filter_by(category='Technical').all()
     skill_data = []
     for s in all_skills:
@@ -168,6 +157,8 @@ def technical_roadmap():
             'completedCount': u_skill.completed_activities_count if u_skill else 0,
             'roadmapGroup': s.roadmap_group 
         })
+    
+    ROADMAP_GROUPS = ["Web Developer", "Cybersecurity Analyst", "Ethical Hacker", "AI/ML Engineer", "Data Scientist", "Data Analyst", "Cloud Engineer", "UI/UX Designer", "Full Stack Developer"]
     return render_template('technical-roadmap.html', roadmap_groups=ROADMAP_GROUPS, skill_data=skill_data)
 
 @app.route('/save_skills', methods=['POST'])
@@ -190,10 +181,8 @@ def save_skills():
 def mark_activity_complete():
     data = request.json
     skill_name = data.get('skill_name')
-    
     skill = Skill.query.filter_by(name=skill_name).first() 
     if not skill: return jsonify({"success": False, "message": "Skill not found"}), 404
-
     entry = StudentSkill.query.filter_by(user_id=current_user.id, skill_id=skill.id).first()
     if not entry:
         entry = StudentSkill(user_id=current_user.id, skill_id=skill.id, current_level=1, completed_activities_count=1)
@@ -202,7 +191,6 @@ def mark_activity_complete():
         entry.completed_activities_count += 1
         if entry.current_level < 5 and entry.completed_activities_count % 3 == 0:
              entry.current_level += 1
-
     db.session.commit()
     return jsonify({"success": True, "new_level": entry.current_level, "count": entry.completed_activities_count})
 
@@ -218,7 +206,6 @@ def non_tech():
             'currentLevel': u_skill.current_level if u_skill else 1,
             'completedCount': u_skill.completed_activities_count if u_skill else 0
         })
-
     ACTIVITIES = {
         'Communication Skills': ['Record a 1-minute self-intro', 'Read aloud for 3 minutes', 'Talk to one new person', 'Write a professional email', 'Explain a concept in simple words'],
         'Time Management': ['Track your day for 24 hours', 'Make a to-do list', 'Complete 1 task using Pomodoro', 'Set top 3 priorities for tomorrow', 'Track actual study hours'],
@@ -231,7 +218,6 @@ def non_tech():
         'Emotional Intelligence': ['Maintain a mood journal', 'Do a 5-min breathing session', 'Practice active listening', 'Write a reflection on emotions', 'Observe someone’s emotion']
     }
     ICONS = {'Communication Skills': '🗣', 'Time Management': '🕒', 'Public Speaking': '🎤', 'Teamwork Skills': '👥', 'Critical Thinking': '🧠', 'Leadership Skills': '🧑‍🏫', 'Creativity': '💡', 'Problem Solving': '🧩', 'Emotional Intelligence': '❤️'}
-
     return render_template('non-technical-activities.html', soft_skill_data=soft_skill_data, ACTIVITIES=ACTIVITIES, ICONS=ICONS)
 
 @app.route('/save_soft_skills', methods=['POST'])
@@ -253,7 +239,6 @@ def submit_feedback():
         name = request.form.get('name')
         rating = request.form.get('rating')
         message = request.form.get('message')
-        
         new_feedback = Feedback(student_name=name, rating=int(rating), message=message)
         db.session.add(new_feedback)
         db.session.commit()
@@ -264,11 +249,31 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
+# --- CHATBOT PROXY ROUTE (Fixes Connection Error) ---
+@app.route('/api/chat', methods=['POST'])
+def chat_proxy():
+    data = request.json
+    user_message = data.get('message', '')
+    
+    API_KEY = "AIzaSyDJ_Zv3pC_c0CRlm_ULZk1h7BgN6ZW4wN4" # Replace with your actual key if this isn't it
+    # Using a stable model version to prevent errors
+    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    
+    payload = {
+        "contents": [{"parts": [{"text": user_message}]}],
+        "systemInstruction": {"parts": [{"text": "You are the helpful AI Guide for the SkillSync website. Your goal is to help students understand the platform."}]} 
+    }
+    
+    try:
+        response = requests.post(URL, json=payload)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # --- MAIN EXECUTION BLOCK ---
-# We run this outside __main__ so Gunicorn sees it
 with app.app_context():
-    db.create_all()     # 1. Create tables
-    seed_database()     # 2. Fill tables (NO EARLY EXIT this time)
+    db.create_all()
+    seed_database()
 
 if __name__ == '__main__':
     app.run(debug=True)
