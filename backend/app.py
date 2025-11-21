@@ -245,26 +245,27 @@ def submit_feedback():
 def review_form():
     return redirect(url_for('submit_feedback'))
 
-# --- CHATBOT PROXY ROUTE (FIXED 404 ERROR) ---
+# --- CHATBOT PROXY ROUTE (FIXED: Using gemini-1.5-flash) ---
 @app.route('/api/chat', methods=['POST'])
 def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
     
+    # YOUR NEW KEY
     API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU" 
     
-    # WE SWITCHED TO "gemini-pro" to fix the 404 error
-    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
+    # The correct model that is currently available
+    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     payload = {
-        "contents": [{"parts": [{"text": user_message}]}] 
+        "contents": [{"parts": [{"text": user_message}]}],
+        "systemInstruction": {"parts": [{"text": "You are the helpful AI Guide for the SkillSync website. Your goal is to help students understand the platform."}]} 
     }
     
     try:
         response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
         
-        # Print response to Render Logs to help us debug if needed
-        print("GOOGLE RESPONSE:", response.text)
+        print("GOOGLE RESPONSE:", response.text) # Keep for debugging
         
         return jsonify(response.json())
     except Exception as e:
