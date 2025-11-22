@@ -240,7 +240,12 @@ def chat_proxy():
     data = request.json
     user_message = data.get('message', '')
     
-    API_KEY = "AIzaSyCgn4GzzsxN-2DHhDBY9IRWpiDFuWdE_vU"
+    # --- FIXED: Securely get the key from Render Environment ---
+    API_KEY = os.environ.get("GEMINI_API_KEY")
+
+    if not API_KEY:
+        print("Error: GEMINI_API_KEY not found in environment variables")
+        return jsonify({"error": "Server Error: API Key not configured"}), 500
     
     # WE ARE USING THE MODEL YOU CONFIRMED WORKS
     URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
@@ -252,6 +257,9 @@ def chat_proxy():
     
     try:
         response = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'})
+        if response.status_code != 200:
+            # This helps debugging if Google returns an error
+            return jsonify(response.json()), response.status_code
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
